@@ -1,0 +1,11 @@
+# Separate from compose.yaml: do not merge the localhost and LAN port mappings.
+services:
+  livekit:
+    image: livekit/livekit-server:v1.9.9
+    command: ["--config", "/etc/livekit.yaml"]
+    ports:
+      - "127.0.0.1:7880:7880/tcp"
+      - "${LAN_IP:?Run npm run lan:setup first}:7881:7881/tcp"
+      - "${LAN_IP:?Run npm run lan:setup first}:7882:7882/udp"
+    volumes:
+      - ./livekit.lan.yaml:/etc/livekit.yaml:ro

@@ -1,0 +1,338 @@
+:root {
+  font-family: Inter,"Segoe UI","Microsoft YaHei",sans-serif;
+  color: #233733;
+  background: #f4f7f5;
+  font-synthesis: none;
+  font-size: 15px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+main {
+  max-width: 1120px;
+  margin: auto;
+  padding: 32px;
+}
+
+header,
+footer,
+.section-title,
+.actions,
+.mic-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #166e59;
+}
+
+.phase,
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #71847d;
+}
+
+.intro {
+  padding: 58px 0 30px;
+}
+
+.intro h1 {
+  font-size: 38px;
+  letter-spacing: -1px;
+  margin: 12px 0;
+}
+
+.intro p,
+aside p {
+  color: #6c7d77;
+  line-height: 1.9;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1.12fr;
+  gap: 24px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #e0e8e3;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 8px 28px #153d2604;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.section-title {
+  margin-bottom: 28px;
+}
+
+.badge,
+.count {
+  font-size: 12px;
+  color: #71817b;
+}
+
+.badge {
+  background: #f0f3f1;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.online {
+  color: #16795a;
+  background: #e5f5ed;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 20px 0;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 9px;
+  padding: 12px 14px;
+  border: 1px solid #dce5e0;
+  border-radius: 9px;
+  background: #fcfdfc;
+  color: #233733;
+}
+
+input:focus {
+  outline: 2px solid #8fc6b1;
+  outline-offset: 2px;
+}
+
+small {
+  font-size: 12px;
+  color: #84928b;
+  font-weight: 400;
+}
+
+label small {
+  display: block;
+  margin-top: 7px;
+}
+
+button {
+  border: 1px solid #dce5e0;
+  border-radius: 9px;
+  background: white;
+  padding: 12px 18px;
+  cursor: pointer;
+  color: #37564b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button:hover:enabled {
+  background: #eaf4ef;
+}
+
+button:focus-visible {
+  outline: 2px solid #27896a;
+  outline-offset: 3px;
+}
+
+.primary {
+  background: #19765b;
+  color: white;
+  border-color: #19765b;
+  flex: 1;
+}
+
+.primary:hover:enabled {
+  background: #125d48;
+}
+
+button:disabled,
+input:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.actions {
+  margin-top: 28px;
+}
+
+.room-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty {
+  text-align: center;
+  margin: auto;
+  padding: 30px 0 45px;
+}
+
+.empty p {
+  font-size: 13px;
+  color: #84928b;
+}
+
+.empty h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.wave {
+  font-size: 34px;
+  color: #9ebfae;
+  letter-spacing: 7px;
+  margin-bottom: 25px;
+}
+
+.mic-control {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #edf0ee;
+}
+
+.mic-control strong {
+  font-size: 13px;
+}
+
+.mic-control p {
+  font-size: 12px;
+  color: #809087;
+  margin-bottom: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+  margin: 0 0 24px;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f3f1;
+}
+
+.avatar {
+  background: #eaf3ee;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #308166;
+}
+
+.speaking {
+  outline: 3px solid #7fc8a6;
+}
+
+.person {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.person small {
+  display: block;
+  margin-top: 4px;
+}
+
+.person strong small {
+  display: inline;
+}
+
+.error {
+  margin-top: 20px;
+  padding: 12px;
+  background: #fff0ec;
+  color: #a54031;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.audio-enable {
+  margin-top: 16px;
+  background: #fff7e0;
+  color: #8d691c;
+}
+
+aside {
+  padding: 24px 28px;
+  margin-top: 24px;
+  border-radius: 14px;
+  background: #eaf0eb;
+  font-size: 13px;
+}
+
+aside p {
+  margin-bottom: 0;
+}
+
+footer {
+  font-size: 11px;
+  color: #8a9990;
+  padding: 30px 0;
+}
+
+@media (max-width: 760px) {
+  main {
+    padding: 20px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .intro {
+    padding-top: 32px;
+  }
+
+  .intro h1 {
+    font-size: 30px;
+  }
+
+  .phase {
+    display: none;
+  }
+
+  .panel {
+    padding: 22px;
+  }
+
+  .empty {
+    min-height: 200px;
+  }
+
+  footer {
+    align-items: start;
+    gap: 12px;
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "voice-call-system",
+  "private": true,
+  "type": "module",
+  "workspaces": ["frontend", "dev-token-server"],
+  "engines": { "node": ">=22.22.0" },
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "dev:token": "npm run dev --workspace dev-token-server",
+    "lan:setup": "node scripts/setup-lan.mjs",
+    "dev:lan": "npm run dev --workspace frontend -- --mode lan",
+    "dev:token:lan": "npm run dev:lan --workspace dev-token-server",
+    "livekit:lan:up": "docker compose --env-file .env.lan -f deploy/compose.lan.yaml up -d",
+    "livekit:lan:down": "docker compose --env-file .env.lan -f deploy/compose.lan.yaml down",
+    "build": "npm run build --workspaces",
+    "test": "vitest run",
+    "livekit:up": "docker compose -f deploy/compose.yaml up -d",
+    "livekit:down": "docker compose -f deploy/compose.yaml down"
+  },
+  "devDependencies": { "vitest": "^3.2.4", "typescript": "~5.9.3", "@types/node": "^22.19.0" }
+}

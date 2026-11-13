@@ -1,0 +1,6 @@
+{
+  "name": "dev-token-server", "private": true, "type": "module",
+  "scripts": { "dev": "node --env-file=../.env --import tsx src/index.ts", "dev:lan": "node --env-file=../.env --env-file=../.env.lan --import tsx src/index.ts", "build": "tsc --noEmit" },
+  "dependencies": { "livekit-server-sdk": "^2.14.0" },
+  "devDependencies": { "tsx": "^4.20.6" }
+}

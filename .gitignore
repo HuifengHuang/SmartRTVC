@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.lan
+deploy/livekit.lan.yaml
+deploy/certs/
+*.local
+coverage/
+*.log
