@@ -7,3 +7,8 @@ deploy/certs/
 *.local
 coverage/
 *.log
+
+.env.stage2
+deploy/livekit.stage2.yaml
+backend/target/
+.tools/

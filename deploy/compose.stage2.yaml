@@ -1,0 +1,42 @@
+services:
+  livekit:
+    volumes:
+      - ./livekit.stage2.yaml:/etc/livekit.yaml:ro
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: smartrtvc
+      MYSQL_USER: smartrtvc
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    ports: ["127.0.0.1:3306:3306"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      retries: 30
+  redis:
+    image: redis:7.4-alpine
+    ports: ["127.0.0.1:6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+  backend:
+    build: ../backend
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/smartrtvc?serverTimezone=UTC
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: ws://127.0.0.1:7880
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      livekit: {condition: service_started}
+volumes:
+  mysql-data:

@@ -1,0 +1,24 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/smartrtvc?serverTimezone=UTC}
+    username: ${DB_USER:smartrtvc}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: 6379
+  sql:
+    init:
+      mode: always
+app:
+  jwt-secret: ${JWT_SECRET}
+  origin: ${APP_ORIGIN:http://127.0.0.1:5173}
+  livekit-key: ${LIVEKIT_API_KEY}
+  livekit-secret: ${LIVEKIT_API_SECRET}
+  livekit-url: ${LIVEKIT_URL:http://127.0.0.1:7880}
+  livekit-public-url: ${LIVEKIT_PUBLIC_URL:ws://127.0.0.1:7880}
+logging:
+  level:
+    org.springframework.web: INFO

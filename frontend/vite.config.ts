@@ -11,13 +11,29 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [vue()],
     server: {
-      host: lan ? env.LAN_IP : '127.0.0.1', port: 5173, strictPort: true,
-      fs: { deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/deploy/**', '**/dev-token-server/**'] },
+      host: lan ? env.LAN_IP : '127.0.0.1',
+      port: 5173,
+      strictPort: true,
+      fs: {
+        deny: [
+          '.env',
+          '.env.*',
+          '*.{crt,pem}',
+          '**/.git/**',
+          '**/deploy/**',
+          '**/dev-token-server/**',
+        ],
+      },
       proxy: {
-        // 浏览器使用同源 /api 地址，由开发服务器转发到本机 Token 服务。
-        '/api': `http://127.0.0.1:${env.TOKEN_PORT || '3001'}`,
+        // 浏览器使用同源 API 与 WebSocket，由开发服务器转发到 Java 后端。
+        '/api': 'http://127.0.0.1:8080',
+        '/ws': { target: 'http://127.0.0.1:8080', ws: true },
         // LiveKit adds /rtc to the supplied URL; preserve it after stripping the prefix.
-        '^/livekit(?:/|$)': { target: 'http://127.0.0.1:7880', ws: true, rewrite: path => path.replace(/^\/livekit/, '') || '/' },
+        '^/livekit(?:/|$)': {
+          target: 'http://127.0.0.1:7880',
+          ws: true,
+          rewrite: (path) => path.replace(/^\/livekit/, '') || '/',
+        },
       },
     },
   };

@@ -1,102 +1,106 @@
-# 实时语音通话 · 第一阶段
+# SmartRTVC 第二阶段
 
-Vue 3 + TypeScript + Vite 前端，通过官方 LiveKit JavaScript SDK 完成 WebRTC 音频通信。独立 Node.js 服务签发短期 Token，LiveKit Server 自部署。没有 Spring Boot、登录、呼叫邀请、视频或数据库。
+在第一阶段 Vue 3 / LiveKit 音频连接基础上增加 Java 17、Spring Boot 3、Spring Security JWT、MyBatis-Plus、MySQL 和 Redis。正式页面无需启动 Node Token 服务。
 
-支持 localhost 和可信局域网两种开发模式。**局域网现在使用 HTTP/WS，无需证书，麦克风测试需按 [局域网指南](deploy/LAN.md) 设置浏览器开发例外**；下文默认命令仍为 localhost 模式。
+## 启动（Windows PowerShell）
 
-## 目录
-
-```text
-frontend/src/App.vue                 页面
-frontend/src/services/voiceRoom.ts   连接、麦克风、订阅与音频清理
-frontend/src/services/token.ts       独立 Token API 层
-dev-token-server/src/server.ts       开发 Token API
-dev-token-server/src/index.ts        环境配置和服务入口
-deploy/compose.yaml                 Docker 部署
-deploy/livekit.yaml                  LiveKit 本机配置
-deploy/compose.lan.yaml              LiveKit 局域网部署
-deploy/LAN.md                        HTTP 局域网、浏览器配置及验收
-scripts/setup-lan.mjs                根据局域网 IP 生成配置
-.env.example                        服务端环境变量模板
-```
-
-## 环境与启动
-
-建议 Node.js 22.22+（或满足依赖要求的更新 LTS）、npm、Docker Desktop（Linux containers）及支持 WebRTC 的浏览器。需要麦克风，推荐耳机。
-
-所有命令从项目根目录执行，PowerShell 如拦截 npm.ps1，请使用 `npm.cmd`。
+需要 Docker Desktop（Linux containers）运行中、Node >=22.22。Docker 构建自带 Maven 和 Java 17，本机不必安装 Java。首次执行：
 
 ```powershell
-npm.cmd install
-Copy-Item .env.example .env   # 仅首次创建；已有 .env 时不要覆盖
-npm.cmd run livekit:up
-```
-
-分别在两个终端启动：
-
-```powershell
-npm.cmd run dev:token
-```
-
-```powershell
+npm.cmd ci
+node scripts/setup-stage2.mjs
+docker compose --env-file .env.stage2 -f deploy/compose.yaml -f deploy/compose.stage2.yaml up -d --build
 npm.cmd run dev
 ```
 
-打开 http://127.0.0.1:5173 。前端端口固定为 5173，开发代理把 `/api` 转发至 127.0.0.1:3001。修改 `.env` 的 TOKEN_PORT 后，重启前端和 Token 服务，代理会自动读取新端口。
+本次开发已在本地生成配置；已存在时无需再次运行 setup。脚本不会覆盖原有配置，密钥随机生成并被 Git 忽略。首次构建需要联网下载 Maven 依赖与镜像。
+
+打开 **http://127.0.0.1:5173**（请统一此地址，WebSocket Origin 校验默认仅允许该来源）。
 
 ```powershell
-npm.cmd test
-npm.cmd run build
-docker compose -f deploy/compose.yaml logs --tail 50
-npm.cmd run livekit:down
+# 日志
+docker compose --env-file .env.stage2 -f deploy/compose.yaml -f deploy/compose.stage2.yaml logs -f backend livekit
+# 停止，保留数据库数据
+docker compose --env-file .env.stage2 -f deploy/compose.yaml -f deploy/compose.stage2.yaml down
+# 配置语法验证，不打印密钥
+docker compose --env-file .env.stage2 -f deploy/compose.yaml -f deploy/compose.stage2.yaml config --quiet
 ```
 
-构建输出为 `frontend/dist`；它仍需要 `/api` 反向代理才能取 Token。当前只提供本地 Vite 开发启动方式，不将无认证 Token 接口用于公网部署。
+| 服务 | 本机地址 | 容器间地址 |
+|---|---|---|
+| Vue | http://127.0.0.1:5173 | 本机运行 |
+| Java REST / 信令 | http://127.0.0.1:8080 /ws | backend:8080 |
+| LiveKit | ws://127.0.0.1:7880 | http://livekit:7880 |
+| MySQL | 127.0.0.1:3306 | mysql:3306 |
+| Redis | 127.0.0.1:6379 | redis:6379 |
 
-## LiveKit 与 Token
+沿用第一阶段 7881/TCP、7882/UDP 和 node_ip 网络配置。第二阶段通过 Compose 覆盖文件挂载独立生成的 LiveKit 配置，添加 Webhook 和随机密钥，不修改原配置。不要单独启动第一阶段 Compose 来替代第二阶段配置。当前仅本地开发，公网或手机访问需另配 HTTPS/WSS、Origin、可信证书、媒体可达地址与防火墙，手机不能使用电脑的 localhost。
 
-固定镜像为 `livekit/livekit-server:v1.9.9`，映射端口仅绑定本机：7880/TCP 为 HTTP/WebSocket 信令，7881/TCP 与 7882/UDP 为媒体。`rtc.node_ip: 127.0.0.1` 用于同机浏览器访问 Docker 映射端口，不适用于手机、远程主机或公网。
+## 模块和数据
 
-`.env` 的 Key/Secret 必须与 `deploy/livekit.yaml` 一致。模板中是公开的本地测试凭据，禁止用于生产。凭据只由服务端读取，不使用 `VITE_` 前缀、不进入前端包。修改 LiveKit 配置后运行 `docker compose -f deploy/compose.yaml restart`。
+- `backend/.../auth`：BCrypt 注册登录、2 小时 JWT、Redis 注销撤销、30 秒一次性 Ticket。
+- `user`：MyBatis-Plus 用户访问，仅输出公开字段。
+- `signaling` / `config`：握手认证、Origin 验证、单设备会话、心跳和在线 TTL（60 秒）。
+- `call`：事务和行锁管理呼叫、接听、挂断、成员权限；数据库 `user_call` 唯一主键避免并发占用。
+- `livekit`：官方 JVM Server SDK 签发 60 秒房间 Token、创建/删除房间、校验 Webhook 签名及原始请求体摘要。
+- `frontend/src/services`：API、WebSocket、通话编排和原有媒体封装分离；`components/LoginForm.vue` 提供认证表单。
+- `deploy/compose.stage2.yaml`：新增 MySQL、Redis、Java 服务；`scripts/setup-stage2.mjs` 生成本地配置。
 
-`POST /api/dev/token` 接收 JSON `{ "roomName": "voice-test", "participantName": "Alice" }`，返回 `{ "token": "...", "serverUrl": "ws://localhost:7880" }`。用户名作为 identity，同一房间必须不同，否则 LiveKit 会替换旧连接。Token 有效期 10 分钟，只能加入指定房间、发布麦克风和订阅，不允许视频及数据发布。
+SQL 在 `backend/src/main/resources/schema.sql`，启动时幂等创建：
 
-页面地址留空时使用服务端返回的地址；手动填写地址时，该 LiveKit 必须配置相同 Key/Secret。HTTPS 页面必须连接 WSS 服务。
+| 表 | 主要字段 |
+|---|---|
+| app_user | id、username（唯一）、password_hash、created_at、updated_at |
+| call_session | id、caller_id、callee_id、room_name、state、双方连接标记、end_reason、created_at/accepted_at/active_at/ended_at |
+| user_call | user_id（唯一占用）、call_id；结束时事务内释放 |
 
-开发 Token 服务固定监听 127.0.0.1，限制浏览器 Origin、JSON 类型及请求体大小。它没有身份认证，任何本机进程仍可申请 Token；不要通过隧道或代理公开该接口。
+## API 与事件
 
-## 双客户端人工验收
+响应统一为 `{data, error}`，失败使用对应 HTTP 状态。除注册、登录、验签 Webhook 和 Ticket 握手路径外，API 必须提供 `Authorization: Bearer <JWT>`。当前用户 ID 来自 JWT。
 
-1. 打开两个浏览器窗口（可用 Chrome 与 Edge），地址均为 http://127.0.0.1:5173 。
-2. 都填写 `voice-test`，用户名分别使用 `Alice` 和 `Bob`，点击加入房间。两边应显示两位参与者。
-3. 分别点击“开启麦克风”，允许权限；默认加入不会自动采集麦克风。若出现“启用声音”，点击解除自动播放限制。
-4. 佩戴耳机，轮流说话确认双向可听。单机两窗口共用同一麦克风可能产生回声；真实声学验收推荐两个独立设备和耳机，但跨设备需按下节另行配置。
-5. 关闭任一端麦克风，确认另一端不再收到该端声音；重新开启验证恢复。
-6. Bob 离开，Alice 列表应更新，Bob 麦克风占用应释放；Bob 改入 `another-room`，确认双方不再互听。
-7. 验证拒绝麦克风权限、重复点击加入、连接中取消、离开后重进、刷新页面及关闭窗口。拒绝麦克风后仍可留在房间听声音，允许权限后可以重试。
-8. 停止 LiveKit 验证重连/断开提示，再启动并重新加入。
+| 方法 | 路径 | 输入 / 行为 |
+|---|---|---|
+| POST | /api/auth/register、/api/auth/login | username、password；登录返回 token、user |
+| POST | /api/auth/logout | 撤销当前 JWT、关闭信令、结束当前通话 |
+| GET | /api/users/me、/api/users、/api/users/{id} | 当前用户、最多 200 名测试用户及在线状态、指定用户 |
+| POST | /api/ws/ticket | 获取一次性凭证；连接 `/ws?ticket=...` |
+| POST | /api/calls | calleeId；发起呼叫 |
+| GET | /api/calls/current、/api/calls/{id} | 恢复/读取当前通话 |
+| POST | /api/calls/{id}/accept、/hangup、/token | 接听、挂断、获取媒体凭证 |
+| POST | /api/livekit/webhook | LiveKit 签名事件，原始请求体验签 |
 
-## 常见问题和手机访问
+信令封装 `{eventId,type,callId,timestamp,data}`，data 是通话快照。推送 CALL_INVITE、CALL_ACCEPTED、CALL_STATE_SYNC、CALL_ENDED；业务操作错误通过 REST 的 error 返回；未知信令消息推送 ERROR。客户端发送 `ping`，服务端返回 PONG。错误、拒接、取消与超时事件可按同一封装扩展。
 
-- 无法加入：检查三个进程、Key/Secret 一致性、WebSocket 地址、防火墙、Docker 日志；重复 identity 会断开原连接。
-- 麦克风拒绝：检查网站及系统权限、设备占用。HTTP 局域网默认禁止采集，开发例外设置见 deploy/LAN.md。
-- 已连接无声：两端开启麦克风、解除自动播放限制、检查系统输出设备和媒体端口。信令连接成功不代表媒体网络可达。
-- 本地端口占用：关闭占用端口的服务或协调修改配置；Vite 使用 strictPort，避免静默换端口导致 Origin 错误。
-- Node 版本：当前开发环境 22.21 可以通过构建，但 livekit-client 的间接依赖 machina 要求 >=22.22，请使用项目声明版本。
-- 手机不能访问电脑的 localhost。按 [LAN 模式](deploy/LAN.md) 配置媒体端口及浏览器例外，访问服务器 HTTP 局域网地址。没有开发例外的浏览器无法保证 HTTP 下发声，当前优先支持桌面 Chrome/Edge。不要公开无认证 Token 服务。
+`RINGING → CONNECTING → ACTIVE → ENDED`：仅被叫能接听；双方经过 LiveKit participant_joined 事件确认媒体连接后进入 ACTIVE，不能由客户端直接修改。麦克风权限拒绝不等于连接失败，页面允许重新开启。挂断幂等；信令离线或媒体离开结束通话。服务重启清理未结束通话，避免永久占用。结束后删除房间并短期重复清理，防止未过期 Token 重新加入残留房间。
 
-## 功能和验证边界
+## 双用户验收
 
-已实现：连接/取消/离开、自动重连状态展示、参与者与讲话状态、麦克风开关、自动订阅与 attach/detach、播放授权、权限错误、退出和页面卸载清理。通过 generation 标记和操作锁隔离过期异步回调。
+1. 按上方命令启动所有服务，检查 backend 和 livekit 日志。
+2. 分别在 Chrome 和 Edge（或独立隐私窗口）打开页面，注册 alice、bob，密码至少 8 位。用户名限 3–32 位字母数字下划线。
+3. 两端显示信令在线后，A 刷新列表并呼叫 B；B 收到来电，点击接听。
+4. 两端允许麦克风；自动播放受限时点“启用声音”。建议佩戴耳机避免同机回声。
+5. 确认双方可听到声音，状态变成通话中，测试麦克风切换和计时。
+6. 任意一方挂断，确认双方停止采集、显示已结束，并能再次呼叫。
+7. 用第三个用户验证忙线和非参与者访问；关闭一端窗口验证另一端结束；拒绝麦克风后重试。
 
-自动测试覆盖 Token 签名/房间授权/有效期/音频限制/非法请求，以及模拟 SDK 的重复加入、连接取消、麦克风开关、权限拒绝、音频挂载清理、播放限制和断开清理。模拟测试不能证明真实音频传输。
+JWT 保存在 sessionStorage，普通独立浏览器会话不共享身份。复制标签页可能继承初始 sessionStorage，因此验收使用不同浏览器或隐私会话。同用户第二设备连接将替换旧信令连接。
 
-HTTP 改造后共 17 项测试通过，覆盖 HTTP Origin、WS 地址选择、混合内容拦截，以及非安全上下文下加入房间和麦克风限制。前后端构建通过，HTTP 前端无需证书启动成功；未完成跨设备真实音频验收。
+## 开发与测试
 
-本次已完成 npm 安装、TypeScript 检查、生产构建、自动测试及 Docker LiveKit 启动检查。浏览器自动化服务不可用，未完成真实双浏览器、麦克风权限及双向音频端到端验收；请按上面的人工步骤验证。构建存在 LiveKit SDK 单包超过 500 kB 的体积提示，不影响运行。
+本机直接运行后端需要 JDK 17+ 和 Maven 3.9：启动 MySQL、Redis、LiveKit，加载 `.env.stage2` 的环境变量，设置 `DB_URL`、`REDIS_HOST`、`LIVEKIT_URL` 指向本机，然后 `mvn -f backend/pom.xml spring-boot:run`。此模式还需将 LiveKit Webhook 地址设为 `http://host.docker.internal:8080/api/livekit/webhook`，默认 Compose 配置用于容器内后端。
 
-## 第二阶段：Spring Boot
+```powershell
+npm.cmd run build
+npm.cmd test
+mvn -f backend/pom.xml verify
+```
 
-替换 `dev-token-server`，由 Spring Boot 认证真实用户、校验房间访问权限并生成 Token；前端仅需调整 `frontend/src/services/token.ts` 的接口和认证信息以及开发代理。不要继续信任客户端提交的用户名作为授权身份。`voiceRoom.ts` 的音频连接层可以复用，业务呼叫信令在后续独立增加。
+Java 测试使用 H2 MySQL 模式验证数据库事务和 HTTP 身份边界，Redis/LiveKit 外部服务使用 mock；不能替代真实 MySQL/Redis/LiveKit 的联调。详见 `docs/STAGE2-VALIDATION.md`。
 
-官方参考：[本地部署](https://docs.livekit.io/transport/self-hosting/local/)、[Token 权限](https://docs.livekit.io/frontends/reference/tokens-grants/)、[客户端 SDK](https://docs.livekit.io/reference/client-sdk-js/)。
+## 当前边界与后续阶段
+
+仅支持单个 Java 实例，尚未实现完整超时、拒接、取消、多设备、多实例状态补偿和通话记录 UI。来电无人接听时需主动挂断；断开信令或重启后端会释放占用。媒体房间清理失败会重试；第三阶段应加入持久化任务、Webhook 乱序处理与完整恢复策略。注册登录仅本地测试使用，公网部署需配合限流和网关保护。
+
+排查：信令失败检查 Origin、Ticket 有效期及 Redis；长期连接中检查 LiveKit Webhook 是否能访问 backend；无声音检查权限、启用声音按钮及 UDP；数据库改密码后旧 volume 不会自动更新密码。不要输出或提交本地密钥。
+
+第一阶段说明保留在 [docs/STAGE1.md](docs/STAGE1.md)，临时 Node Token 服务仅供独立调试。官方 JVM SDK 参考：https://github.com/livekit/server-sdk-kotlin 。
